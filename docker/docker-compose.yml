@@ -1,0 +1,63 @@
+version: '3.6'
+
+networks:
+  backend-network:
+    driver: bridge
+
+services:
+
+  bitcoind_regtest:
+    build:
+      context: ../
+      dockerfile: docker/bitcoind.Dockerfile
+    command: "bitcoind -chain=regtest -conf=/wd/conf/bitcoind.conf -datadir=/wd/bitcoind_regtest/"
+    ports:
+      - "18515:18515"
+    expose:
+      - "18515"
+    volumes:
+      - "bitcoind_regtest_datadir:/wd/bitcoind_regtest"
+    networks:
+      - backend-network
+
+  lnd_sender:
+    build:
+      context: ../
+      dockerfile: docker/lnd.Dockerfile
+    command: "lnd --btcd.dir=/wd/lnd_sender_regtest --bitcoin.active --bitcoin.regtest"
+    depends_on:
+      - bitcoind_regtest
+    volumes:
+      - "lnd_sender_regtest_datadir:/wd/lnd_sender_regtest"
+    networks:
+      - backend-network
+
+  lnd_receiver:
+    build:
+      context: ../
+      dockerfile: docker/lnd.Dockerfile
+    command: "lnd --btcd.dir=/wd/lnd_receiver_regtest --bitcoin.active --bitcoin.regtest"
+    depends_on:
+      - bitcoind_regtest
+    volumes:
+      - "lnd_receiver_regtest_datadir:/wd/lnd_receiver_regtest"
+    networks:
+      - backend-network
+
+  lnd_service:
+    build:
+      context: ../
+      dockerfile: docker/lnd.Dockerfile
+    command: "lnd --btcd.dir=/wd/lnd_service_regtest --bitcoin.active --bitcoin.regtest --accept-keysend"
+    depends_on:
+      - bitcoind_regtest
+    volumes:
+      - "lnd_service_regtest_datadir:/wd/lnd_service_regtest"
+    networks:
+      - backend-network
+
+volumes:
+  bitcoind_regtest_datadir:
+  lnd_sender_regtest_datadir:
+  lnd_receiver_regtest_datadir:
+  lnd_service_regtest_datadir:
